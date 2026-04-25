@@ -1,0 +1,34 @@
+# kube-prometheus-stack — Prometheus, Alertmanager, Grafana, node-exporter,
+# kube-state-metrics. Adopts the existing `monitoring` Helm release in place
+# (matching releaseName + chart version) so applying this Application against
+# the current cluster does not redeploy or churn resources.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: 83.4.3
+      helm:
+        releaseName: monitoring
+        valueFiles:
+          - $values/k8s/charts/monitoring/values.yaml
+    - repoURL: https://github.com/jkthms/homelab.git
+      targetRevision: main
+      ref: values
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

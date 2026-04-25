@@ -1,0 +1,28 @@
+# Root "app of apps" Application. Tells ArgoCD to watch k8s/apps/ in this
+# repo — every Application manifest dropped in there is auto-discovered and
+# managed by ArgoCD without further bootstrapping.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/jkthms/homelab.git
+    targetRevision: main
+    path: k8s/apps
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

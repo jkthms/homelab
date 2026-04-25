@@ -1,0 +1,15 @@
+# Values for kube-prometheus-stack. Pin chart version in the matching
+# Application manifest under k8s/apps/monitoring.yaml.
+#
+# Grafana admin credentials are NOT in this file. Create the secret
+# out-of-band so the password never lands in git:
+#
+#   kubectl -n monitoring create secret generic grafana-admin-credentials \
+#     --from-literal=admin-user=admin \
+#     --from-literal=admin-password='<choose-one>'
+
+grafana:
+  admin:
+    existingSecret: grafana-admin-credentials
+    userKey: admin-user
+    passwordKey: admin-password
