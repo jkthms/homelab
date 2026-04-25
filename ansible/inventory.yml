@@ -27,3 +27,11 @@ all:
     # Each host must also be defined under `apex` above with its ansible_host.
     apex_workers:
       hosts: {}
+
+    # Tailscale subnet routers — advertise the LAN to the tailnet so devices
+    # off-network can reach LAN services. One node is enough; routes only
+    # flow through one router at a time, so adding more buys recovery, not
+    # bandwidth. Default: the bootstrap node.
+    apex_subnet_router:
+      hosts:
+        apex.dev01:

@@ -1,0 +1,21 @@
+---
+# Subnet(s) this node will route for, comma-separated CIDRs. Devices on
+# the tailnet that opt in to this route can then reach hosts on the LAN
+# (e.g. apex.dev01 at 192.168.1.50) by their LAN IP.
+tailscale_advertise_routes: "192.168.1.0/24"
+
+# K3s nodes have their own DNS expectations (CoreDNS via kubelet). Don't
+# let Tailscale rewrite /etc/resolv.conf on the host.
+tailscale_accept_dns: false
+
+# Name shown in the Tailscale admin console.
+tailscale_hostname: "{{ inventory_hostname }}"
+
+# One-time auth key used to onboard the node onto the tailnet. Generate at
+# https://login.tailscale.com/admin/settings/keys (recommended: non-reusable,
+# non-ephemeral, no expiry override). Pass via environment, never commit:
+#
+#   TAILSCALE_AUTHKEY=tskey-auth-... ansible-playbook bootstrap.yml
+#
+# After the node is authenticated once, re-runs don't need it.
+tailscale_auth_key: "{{ lookup('env', 'TAILSCALE_AUTHKEY') | default('', true) }}"

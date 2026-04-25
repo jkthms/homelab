@@ -55,3 +55,12 @@
     - role: k3s
       vars:
         k3s_role: agent
+
+# Bring the LAN onto the tailnet via one node so off-network devices can
+# reach 192.168.1.0/24 services. First run requires TAILSCALE_AUTHKEY in
+# the environment; after that, the role re-runs without it.
+- name: Tailscale subnet router
+  hosts: apex_subnet_router
+  become: true
+  roles:
+    - tailscale
