@@ -11,7 +11,9 @@ kubectl get ns "${NAMESPACE}" >/dev/null 2>&1 \
   || kubectl create namespace "${NAMESPACE}"
 
 echo ">> Applying ArgoCD ${ARGOCD_VERSION} manifests"
-kubectl apply -n "${NAMESPACE}" \
+# Server-side apply: the applicationsets CRD exceeds the 256KB
+# last-applied-configuration annotation limit for client-side apply.
+kubectl apply -n "${NAMESPACE}" --server-side --force-conflicts \
   -f "https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/install.yaml"
 
 echo ">> Waiting for argocd-server to be ready"
