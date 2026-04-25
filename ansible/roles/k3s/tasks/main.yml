@@ -1,0 +1,53 @@
+---
+- name: Assert role is set
+  ansible.builtin.assert:
+    that: k3s_role in ['bootstrap', 'joiner', 'agent']
+    fail_msg: "k3s_role must be 'bootstrap', 'joiner', or 'agent', got '{{ k3s_role }}'"
+
+- name: Check if K3s is already installed at the desired version
+  ansible.builtin.command: k3s --version
+  register: k3s_installed
+  changed_when: false
+  failed_when: false
+
+- name: Fetch K3s installer
+  ansible.builtin.get_url:
+    url: "{{ k3s_install_url }}"
+    dest: /usr/local/bin/k3s-install.sh
+    mode: "0755"
+  when: k3s_version not in (k3s_installed.stdout | default(''))
+
+- name: Build INSTALL_K3S_EXEC for bootstrap node
+  ansible.builtin.set_fact:
+    k3s_exec: "server --cluster-init --tls-san {{ ansible_host }}"
+  when: k3s_role == 'bootstrap'
+
+- name: Build INSTALL_K3S_EXEC for joiner nodes
+  ansible.builtin.set_fact:
+    k3s_exec: "server --server {{ k3s_server_url }} --tls-san {{ ansible_host }}"
+  when: k3s_role == 'joiner'
+
+- name: Build INSTALL_K3S_EXEC for agent nodes
+  ansible.builtin.set_fact:
+    k3s_exec: "agent --server {{ k3s_server_url }}"
+  when: k3s_role == 'agent'
+
+- name: Determine systemd unit
+  ansible.builtin.set_fact:
+    k3s_service: "{{ 'k3s-agent' if k3s_role == 'agent' else 'k3s' }}"
+
+- name: Install K3s ({{ k3s_role }})
+  ansible.builtin.command: /usr/local/bin/k3s-install.sh
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
+    INSTALL_K3S_EXEC: "{{ k3s_exec }}"
+    K3S_TOKEN: "{{ k3s_node_token | default(omit) }}"
+  when: k3s_version not in (k3s_installed.stdout | default(''))
+  register: k3s_install_result
+  changed_when: "'No change detected' not in k3s_install_result.stdout"
+
+- name: Ensure {{ k3s_service }} is enabled and running
+  ansible.builtin.systemd:
+    name: "{{ k3s_service }}"
+    enabled: true
+    state: started

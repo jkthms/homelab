@@ -1,0 +1,29 @@
+all:
+  children:
+    apex:
+      hosts:
+        apex.dev01:
+          ansible_host: 192.168.1.50
+        apex.dev02:
+          ansible_host: 192.168.1.51
+        apex.dev03:
+          ansible_host: 192.168.1.52
+      vars:
+        ansible_user: jake
+
+    # First server boots etcd with --cluster-init.
+    apex_bootstrap:
+      hosts:
+        apex.dev01:
+
+    # Remaining servers join the existing etcd cluster.
+    apex_joiners:
+      hosts:
+        apex.dev02:
+        apex.dev03:
+
+    # Agent (worker) nodes — run workloads only, no control plane / etcd.
+    # Add hosts here to scale capacity beyond the three control-plane nodes.
+    # Each host must also be defined under `apex` above with its ansible_host.
+    apex_workers:
+      hosts: {}
