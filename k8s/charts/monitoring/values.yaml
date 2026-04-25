@@ -13,3 +13,15 @@ grafana:
     existingSecret: grafana-admin-credentials
     userKey: admin-user
     passwordKey: admin-password
+
+  # Exposed via Traefik (k3s default) on the LAN. Resolution of the hostname
+  # is handled separately — until local DNS is in place, test with:
+  #   curl -H "Host: grafana.apex.home" http://192.168.1.50
+  # or add `192.168.1.50 grafana.apex.home` to /etc/hosts on your client.
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    path: /
+    pathType: Prefix
+    hosts:
+      - grafana.apex.home
