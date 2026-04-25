@@ -1,0 +1,94 @@
+---
+# Installs Tailscale, enables IP forwarding (required for subnet routing),
+# and brings the node up on the tailnet advertising the LAN subnet. Other
+# tailnet devices that opt in to the route can then reach LAN services
+# (Grafana, ArgoCD, the K3s API) by their 192.168.x.x address from anywhere.
+#
+# First run needs TAILSCALE_AUTHKEY in the environment. Re-runs use
+# `tailscale set` and need no key.
+
+- name: Add Tailscale apt signing key
+  ansible.builtin.get_url:
+    url: https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg
+    dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+    mode: "0644"
+
+- name: Add Tailscale apt repo
+  ansible.builtin.get_url:
+    url: https://pkgs.tailscale.com/stable/ubuntu/noble.tailscale-keyring.list
+    dest: /etc/apt/sources.list.d/tailscale.list
+    mode: "0644"
+  register: tailscale_repo
+
+- name: Refresh apt cache after repo change
+  ansible.builtin.apt:
+    update_cache: true
+  when: tailscale_repo.changed
+
+- name: Install tailscale
+  ansible.builtin.apt:
+    name: tailscale
+    state: present
+
+- name: Enable IP forwarding for subnet routing
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/99-tailscale.conf
+    content: |
+      net.ipv4.ip_forward = 1
+      net.ipv6.conf.all.forwarding = 1
+    owner: root
+    group: root
+    mode: "0644"
+  register: tailscale_sysctl
+
+- name: Reload sysctl if forwarding config changed
+  ansible.builtin.command: sysctl --system
+  when: tailscale_sysctl.changed
+
+- name: Ensure tailscaled is enabled and running
+  ansible.builtin.systemd:
+    name: tailscaled
+    enabled: true
+    state: started
+
+- name: Read tailscale backend state
+  ansible.builtin.command: tailscale status --json --peers=false
+  register: tailscale_status
+  changed_when: false
+  failed_when: false
+
+- name: Determine if tailscale is already authenticated
+  ansible.builtin.set_fact:
+    tailscale_running: >-
+      {{
+        tailscale_status.rc == 0
+        and (tailscale_status.stdout | from_json).BackendState | default('Stopped') == 'Running'
+      }}
+
+- name: Require auth key for first-time login
+  ansible.builtin.assert:
+    that: tailscale_auth_key | length > 0
+    fail_msg: >-
+      Tailscale is not yet authenticated on {{ inventory_hostname }}. Generate
+      a one-off auth key at https://login.tailscale.com/admin/settings/keys
+      and re-run with TAILSCALE_AUTHKEY=tskey-auth-... ansible-playbook bootstrap.yml
+  when: not tailscale_running
+
+- name: Bring tailscale up (first-time auth)
+  ansible.builtin.command: >-
+    tailscale up
+    --authkey={{ tailscale_auth_key }}
+    --advertise-routes={{ tailscale_advertise_routes }}
+    --accept-dns={{ tailscale_accept_dns | bool | string | lower }}
+    --hostname={{ tailscale_hostname }}
+  when: not tailscale_running
+  no_log: true
+
+- name: Reconcile tailscale settings on existing node
+  ansible.builtin.command: >-
+    tailscale set
+    --advertise-routes={{ tailscale_advertise_routes }}
+    --accept-dns={{ tailscale_accept_dns | bool | string | lower }}
+    --hostname={{ tailscale_hostname }}
+  when: tailscale_running
+  changed_when: false
