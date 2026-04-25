@@ -1,0 +1,6 @@
+---
+# 'bootstrap' = first server (--cluster-init)
+# 'joiner'    = additional server (control-plane + etcd)
+# 'agent'     = worker (kubelet + workloads only, no control-plane)
+k3s_role: joiner
+k3s_install_url: https://get.k3s.io

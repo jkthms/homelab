@@ -1,0 +1,57 @@
+---
+# End-to-end host bootstrap: prep the box, give the ansible user passwordless
+# sudo, then bring up K3s in HA mode (first node initialises etcd; the rest
+# join). Idempotent — safe to re-run.
+#
+# First time against a fresh host:
+#   ansible-playbook bootstrap.yml --ask-pass --ask-become-pass
+# Thereafter (key auth + NOPASSWD already in place):
+#   ansible-playbook bootstrap.yml
+
+- name: Common host prep
+  hosts: apex
+  become: true
+  roles:
+    - common
+    - sudoers
+
+- name: Bring up K3s on the bootstrap server
+  hosts: apex_bootstrap
+  become: true
+  roles:
+    - role: k3s
+      vars:
+        k3s_role: bootstrap
+
+- name: Read node-token from the bootstrap server
+  hosts: apex_bootstrap
+  become: true
+  tasks:
+    - name: Slurp node-token
+      ansible.builtin.slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_node_token_b64
+
+    - name: Stash node-token as a fact
+      ansible.builtin.set_fact:
+        k3s_node_token: "{{ k3s_node_token_b64.content | b64decode | trim }}"
+
+- name: Join remaining K3s servers
+  hosts: apex_joiners
+  become: true
+  vars:
+    k3s_node_token: "{{ hostvars[groups['apex_bootstrap'][0]]['k3s_node_token'] }}"
+  roles:
+    - role: k3s
+      vars:
+        k3s_role: joiner
+
+- name: Join K3s agent (worker) nodes
+  hosts: apex_workers
+  become: true
+  vars:
+    k3s_node_token: "{{ hostvars[groups['apex_bootstrap'][0]]['k3s_node_token'] }}"
+  roles:
+    - role: k3s
+      vars:
+        k3s_role: agent

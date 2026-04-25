@@ -1,0 +1,24 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install baseline packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - chrony           # accurate time — etcd is unhappy without it
+      - iptables         # K3s prefers iptables-legacy/nftables present
+      - open-iscsi       # iSCSI CSI drivers (e.g. Longhorn) need this
+      - nfs-common       # NFS PVs
+      - jq
+      - htop
+    state: present
+
+- name: Enable and start chrony
+  ansible.builtin.systemd:
+    name: chrony
+    enabled: true
+    state: started

@@ -1,0 +1,9 @@
+---
+# Pinned K3s version. Bump this and re-run the bootstrap playbook to upgrade.
+k3s_version: v1.34.6+k3s1
+
+# The bootstrap server's API endpoint that joiners point at.
+k3s_server_url: "https://192.168.1.50:6443"
+
+# Sudoer config: which user gets NOPASSWD.
+sudoers_nopasswd_user: jake
