@@ -47,3 +47,7 @@ ansible/.vault_pass
 # Operational docs are kept local (or in the private overlay repo) — not
 # published to the public homelab repo.
 /docs/
+
+# Claude Code local project settings (per-machine permissions allowlist
+# and similar). Not meant for version control.
+.claude/
