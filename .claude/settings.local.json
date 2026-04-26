@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(kubectl cluster-info *)",
+      "Bash(kubectl get nodes *)",
+      "Bash(kubectl get ns *)",
+      "Bash(kubectl get *)",
+      "Bash(helm list *)",
+      "Bash(ssh *)",
+      "Bash(git -C D:/Projects/homelab/homelab remote -v)",
+      "Bash(git -C D:/Projects/homelab/homelab branch -vv)",
+      "Bash(grep -iA 3 'apex\\\\|host')",
+      "Bash(helm get *)",
+      "Bash(curl -fsSL https://api.github.com/repos/argoproj/argo-cd/releases/latest)",
+      "Bash(git -C D:/Projects/homelab/homelab status)",
+      "Bash(helm repo *)"
+    ]
+  }
+}

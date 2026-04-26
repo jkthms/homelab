@@ -21,3 +21,10 @@ rules:
   # Ansible uses yes/no liberally.
   truthy:
     allowed-values: ["true", "false", "yes", "no"]
+
+  # Required by ansible-lint — aligns with its embedded yamllint rules.
+  braces:
+    max-spaces-inside: 1
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
