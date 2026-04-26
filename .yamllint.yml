@@ -1,0 +1,23 @@
+# Shared yamllint config for K8s manifests, Ansible, and GitHub workflows.
+extends: default
+
+rules:
+  # K8s manifests and Ansible playbooks have legitimately long lines
+  # (URLs, container args). 200 is enough headroom without letting
+  # readability rot.
+  line-length:
+    max: 200
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+
+  # Don't require `---` at the top of every file.
+  document-start: disable
+
+  # K8s YAML often has single-space comments (`# foo`); fine.
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable
+
+  # Ansible uses yes/no liberally.
+  truthy:
+    allowed-values: ["true", "false", "yes", "no"]

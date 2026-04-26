@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python lint tools
+        run: pip install --quiet yamllint ansible-core ansible-lint
+
+      - name: Install kubeconform + actionlint
+        run: |
+          mkdir -p bin
+          curl -fsSL https://github.com/yannh/kubeconform/releases/download/v0.6.4/kubeconform-linux-amd64.tar.gz \
+            | tar -xz -C bin kubeconform
+          curl -fsSL https://github.com/rhysd/actionlint/releases/download/v1.6.27/actionlint_1.6.27_linux_amd64.tar.gz \
+            | tar -xz -C bin actionlint
+          echo "$PWD/bin" >> "$GITHUB_PATH"
+
+      - name: yamllint
+        run: yamllint .
+
+      - name: shellcheck
+        run: |
+          sudo apt-get install -y --no-install-recommends shellcheck
+          find . -name '*.sh' -not -path './.git/*' -print0 | xargs -0 -r shellcheck
+
+      - name: actionlint
+        run: actionlint
+
+      - name: kubeconform
+        # Validate Argo CRDs against the upstream catalog so typos in
+        # Application manifests fail loud, not silently in the cluster.
+        run: |
+          kubeconform -strict -ignore-missing-schemas \
+            -schema-location default \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+            k8s/apps/ k8s/bootstrap/
+
+      - name: ansible-playbook --syntax-check
+        run: ansible-playbook ansible/bootstrap.yml --syntax-check -i ansible/inventory.yml
+
+      - name: ansible-lint
+        run: ansible-lint ansible/
