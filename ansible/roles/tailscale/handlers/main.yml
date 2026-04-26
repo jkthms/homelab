@@ -2,11 +2,11 @@
 # Handlers for the tailscale role. Notified by tasks that change a
 # config file; these run once per play (or sooner via meta: flush_handlers).
 
-- name: refresh apt cache
+- name: Refresh apt cache
   ansible.builtin.apt:
     update_cache: true
 
-- name: reload sysctl
+- name: Reload sysctl
   ansible.builtin.command: sysctl --system
   # Handler only fires after a config change, so reporting changed=true
   # is honest. Setting it explicitly satisfies the no-changed-when rule.

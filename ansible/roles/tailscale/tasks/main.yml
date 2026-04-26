@@ -18,7 +18,7 @@
     url: https://pkgs.tailscale.com/stable/ubuntu/noble.tailscale-keyring.list
     dest: /etc/apt/sources.list.d/tailscale.list
     mode: "0644"
-  notify: refresh apt cache
+  notify: Refresh apt cache
 
 # Force the apt-cache handler to run NOW so the install below sees the
 # new repo. Without this, handlers fire at end-of-play and the install
@@ -40,7 +40,7 @@
     owner: root
     group: root
     mode: "0644"
-  notify: reload sysctl
+  notify: Reload sysctl
 
 - name: Ensure tailscaled is enabled and running
   ansible.builtin.systemd:
