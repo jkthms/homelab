@@ -1,5 +1,5 @@
 ---
-- name: Grant {{ sudoers_nopasswd_user }} passwordless sudo
+- name: Configure passwordless sudo for {{ sudoers_nopasswd_user }}
   ansible.builtin.copy:
     dest: "/etc/sudoers.d/90-{{ sudoers_nopasswd_user }}-nopasswd"
     content: "{{ sudoers_nopasswd_user }} ALL=(ALL) NOPASSWD:ALL\n"
